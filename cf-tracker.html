@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>おこづかいC/Fノート</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --invest: #0F6E56; --invest-bg: #E1F5EE; --invest-mid: #1D9E75;
+    --consume: #185FA5; --consume-bg: #E6F1FB; --consume-mid: #378ADD;
+    --waste:   #993C1D; --waste-bg:  #FAECE7; --waste-mid:  #D85A30;
+    --gray: #5F5E5A; --gray-bg: #F1EFE8;
+    --font: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: #f8f6f2; min-height: 100vh; }
+
+  .app { max-width: 480px; margin: 0 auto; background: #fff; min-height: 100vh; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 40px rgba(0,0,0,.06); }
+
+  /* Header */
+  .header { padding: 18px 20px 0; }
+  .header h1 { font-size: 17px; font-weight: 600; letter-spacing: .02em; color: #1a1a18; }
+  .header p { font-size: 12px; color: #888; margin-top: 2px; }
+
+  /* Tabs */
+  .tabs { display: flex; border-bottom: 1px solid #eee; margin-top: 14px; }
+  .tab { flex: 1; padding: 11px 0; border: none; background: none; cursor: pointer; font-size: 13px; font-family: var(--font); color: #888; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .2s; }
+  .tab.active { color: #1a1a18; font-weight: 600; border-bottom-color: #1a1a18; }
+
+  /* Content */
+  .view { display: none; flex: 1; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* ── CHAT VIEW ── */
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { display: flex; }
+  .msg.user { justify-content: flex-end; }
+  .msg.assistant { justify-content: flex-start; }
+  .bubble { max-width: 82%; padding: 10px 14px; font-size: 14px; line-height: 1.65; }
+  .msg.user .bubble { background: #1a1a18; color: #fff; border-radius: 18px 18px 4px 18px; }
+  .msg.assistant .bubble { background: #f4f2ee; color: #1a1a18; border-radius: 18px 18px 18px 4px; }
+  .msg.system .bubble { width: 100%; background: #E1F5EE; color: var(--invest); border-radius: 10px; font-size: 13px; padding: 9px 12px; }
+  .typing { display: none; }
+  .typing.active { display: flex; }
+  .typing .bubble { display: flex; align-items: center; gap: 4px; padding: 12px 16px; }
+  .dot { width: 6px; height: 6px; background: #ccc; border-radius: 50%; animation: blink 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: .2s; }
+  .dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,80%,100% { opacity:.3; transform: scale(.8); } 40% { opacity:1; transform: scale(1); } }
+
+  .chat-input-wrap { border-top: 1px solid #eee; padding: 12px 16px 16px; display: flex; gap: 8px; }
+  .chat-input { flex: 1; border: 1px solid #e0ddd8; border-radius: 22px; padding: 9px 16px; font-size: 14px; font-family: var(--font); outline: none; background: #faf9f7; }
+  .chat-input:focus { border-color: #999; background: #fff; }
+  .send-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: #1a1a18; color: #fff; cursor: pointer; font-size: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: opacity .15s; }
+  .send-btn:disabled { opacity: .35; cursor: default; }
+
+  /* Quick prompts */
+  .quick-prompts { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 10px; }
+  .qp { font-size: 12px; padding: 5px 11px; border: 1px solid #e0ddd8; border-radius: 16px; background: #faf9f7; color: #555; cursor: pointer; font-family: var(--font); white-space: nowrap; }
+  .qp:hover { background: #f0ede8; }
+
+  /* ── DASHBOARD VIEW ── */
+  .dash { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  .month-row { display: flex; align-items: center; justify-content: space-between; }
+  .month-label { font-size: 13px; color: #888; }
+  input[type="month"] { border: 1px solid #e0ddd8; border-radius: 8px; padding: 5px 10px; font-size: 13px; font-family: var(--font); background: #faf9f7; outline: none; }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .summary-card { background: #f8f6f2; border-radius: 10px; padding: 11px 8px; text-align: center; }
+  .summary-card .s-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .summary-card .s-val { font-size: 19px; font-weight: 600; color: #1a1a18; }
+  .summary-card .s-val.danger { color: var(--waste-mid); }
+  .summary-card .s-val.ok { color: var(--invest-mid); }
+
+  /* CF bar */
+  .cf-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 14px 16px; }
+  .cf-title { font-size: 13px; font-weight: 600; color: #1a1a18; margin-bottom: 12px; }
+  .cf-row { margin-bottom: 11px; }
+  .cf-row:last-child { margin-bottom: 0; }
+  .cf-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 13px; }
+  .cf-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .cf-pct { font-size: 11px; color: #888; margin-left: 4px; }
+  .cf-bar-bg { height: 5px; background: #f0ede8; border-radius: 3px; overflow: hidden; }
+  .cf-bar { height: 100%; border-radius: 3px; transition: width .4s ease; }
+
+  /* Subcategory breakdown */
+  .sub-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 14px 16px; }
+  .sub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+  .sub-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 5px 8px; background: #faf9f7; border-radius: 7px; }
+  .sub-name { color: #555; }
+  .sub-amt { font-weight: 600; color: #1a1a18; }
+
+  /* Tx list */
+  .tx-section { }
+  .tx-title { font-size: 13px; font-weight: 600; color: #1a1a18; margin-bottom: 8px; }
+  .tx-empty { font-size: 13px; color: #aaa; text-align: center; padding: 24px 0; }
+  .tx-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f0ede8; }
+  .tx-item:last-child { border-bottom: none; }
+  .tx-left { display: flex; align-items: center; gap: 10px; }
+  .tx-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .tx-desc { font-size: 13px; font-weight: 500; color: #1a1a18; }
+  .tx-meta { font-size: 11px; color: #aaa; margin-top: 1px; }
+  .tx-amt { font-size: 14px; font-weight: 600; color: #1a1a18; }
+
+  /* Analyze button */
+  .analyze-btn { width: 100%; padding: 12px; border: 1px solid #e0ddd8; border-radius: 10px; background: #faf9f7; font-size: 13px; font-family: var(--font); color: #555; cursor: pointer; transition: background .15s; }
+  .analyze-btn:hover { background: #f0ede8; }
+
+  /* Chart container */
+  .chart-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 14px 16px; }
+  .chart-wrap { position: relative; height: 180px; }
+
+  /* Allowance setting */
+  .setting-row { display: flex; align-items: center; justify-content: space-between; background: #f8f6f2; border-radius: 10px; padding: 10px 14px; }
+  .setting-label { font-size: 13px; color: #555; }
+  .setting-input { border: 1px solid #e0ddd8; border-radius: 8px; padding: 4px 10px; font-size: 14px; font-family: var(--font); width: 90px; text-align: right; background: #fff; }
+
+  .scrollable { overflow-y: auto; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>おこづかいC/Fノート</h1>
+    <p>投資・消費・浪費を仕分けて、お金の流れを見える化しよう</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('chat')">📝 記録する</button>
+    <button class="tab" onclick="switchTab('dash')">📊 ダッシュボード</button>
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div id="view-chat" class="view active">
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg assistant">
+        <div class="bubble">こんにちは！今日の支出を教えてね🌱<br>「コンビニで350円使った」みたいに話しかけてくれたら、一緒に記録しよう。</div>
+      </div>
+    </div>
+    <div class="typing" id="typing">
+      <div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>
+    <div class="quick-prompts">
+      <button class="qp" onclick="sendQuick('今日の支出を教えて')">今日の支出は？</button>
+      <button class="qp" onclick="sendQuick('今月の振り返りをして')">今月を振り返る</button>
+      <button class="qp" onclick="sendQuick('浪費を減らすコツを教えて')">浪費を減らしたい</button>
+    </div>
+    <div class="chat-input-wrap">
+      <input id="chatInput" class="chat-input" type="text" placeholder="今日の支出を教えて..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">↑</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="view-dash" class="view">
+    <div class="dash" id="dashContent"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'cf-tracker-v2';
+const CATS = {
+  invest: { label: '投資', color: '#0F6E56', bg: '#E1F5EE', mid: '#1D9E75' },
+  consume: { label: '消費', color: '#185FA5', bg: '#E6F1FB', mid: '#378ADD' },
+  waste:   { label: '浪費', color: '#993C1D', bg: '#FAECE7', mid: '#D85A30' },
+};
+const SUBCATS = {
+  invest:  ['学び・参考書', '習い事・体験', '健康・スポーツ', '道具・文具'],
+  consume: ['友人との交際費', '外食・カフェ', '日用品・生活費', '交通費'],
+  waste:   ['衝動買い', '課金・ガチャ', '無駄な飲食', 'その他'],
+};
+
+let transactions = [];
+let allowance = 5000;
+let chatHistory = [];
+let isLoading = false;
+let chart = null;
+
+// ── Storage ──
+async function load() {
+  try {
+    const r = await window.storage.get(STORAGE_KEY);
+    if (r) {
+      const d = JSON.parse(r.value);
+      transactions = d.transactions || [];
+      allowance = d.allowance || 5000;
+    }
+  } catch(e) {}
+}
+async function save() {
+  try { await window.storage.set(STORAGE_KEY, JSON.stringify({ transactions, allowance })); } catch(e) {}
+}
+
+// ── Tabs ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0) === (tab==='chat')));
+  document.getElementById('view-chat').classList.toggle('active', tab==='chat');
+  document.getElementById('view-dash').classList.toggle('active', tab==='dash');
+  if (tab === 'dash') renderDash();
+}
+
+// ── Chat ──
+function addMsg(role, text) {
+  const wrap = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.innerHTML = text.replace(/\n/g, '<br>');
+  div.appendChild(bub);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function addSystem(text) {
+  const wrap = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg system';
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.textContent = text;
+  div.appendChild(bub);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function setLoading(v) {
+  isLoading = v;
+  document.getElementById('typing').classList.toggle('active', v);
+  document.getElementById('sendBtn').disabled = v;
+  const wrap = document.getElementById('chatMessages');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function sendQuick(text) {
+  document.getElementById('chatInput').value = text;
+  sendMsg();
+}
+
+async function sendMsg() {
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text || isLoading) return;
+  inp.value = '';
+  addMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+  setLoading(true);
+
+  const today = new Date().toISOString().slice(0,10);
+  const txSummary = transactions.slice(-10).map(t =>
+    `${t.date} ${t.description} ¥${t.amount} [${CATS[t.category]?.label}/${t.subcategory}]`
+  ).join('\n');
+
+  const system = `あなたは中学1年生の女の子のお小遣い管理AIアシスタントです。
+友達のように親しみやすく、でも押しつけがましくなく話してください。
+
+【あなたの役割】
+支出の記録を手伝い、「投資・消費・浪費」に仕分けする練習を通じて金銭感覚を育てます。
+
+【3つの分類】
+- 投資：学び、成長、健康、体験につながる支出（本、習い事、スポーツ用品など）
+- 消費：日常生活に必要で適切な支出（食事、交通費、文具など）  
+- 浪費：衝動的・無駄な支出（ガチャ、衝動買いなど）
+
+※「浪費」を責めるのではなく「何%まで浪費OKか自分で決めよう」というスタンスで。
+
+【支出を記録するとき】
+1. 支出内容と金額を確認する
+2. 「これって自分的には投資？消費？浪費？どう思う？」と聞く
+3. ユーザーが分類を決めたら（または明らかな場合）、必ずこの形式で出力する：
+
+<tx>{"amount":金額数値,"description":"説明","category":"invest|consume|waste","subcategory":"サブカテゴリ","date":"${today}"}</tx>
+
+サブカテゴリ候補：
+- invest: 学び・参考書, 習い事・体験, 健康・スポーツ, 道具・文具
+- consume: 友人との交際費, 外食・カフェ, 日用品・生活費, 交通費
+- waste: 衝動買い, 課金・ガチャ, 無駄な飲食, その他
+
+【最近の記録】
+${txSummary || 'まだ記録なし'}
+
+今日の日付: ${today}
+月のお小遣い: ¥${allowance.toLocaleString()}
+
+振り返りやアドバイスを求められたときは、記録データをもとに具体的で温かいコメントを。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system,
+        messages: chatHistory,
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || 'ごめん、エラーが起きちゃった😢';
+
+    // Extract transaction
+    const txMatch = raw.match(/<tx>([\s\S]*?)<\/tx>/);
+    const clean = raw.replace(/<tx>[\s\S]*?<\/tx>/g, '').trim();
+
+    setLoading(false);
+    addMsg('assistant', clean);
+    chatHistory.push({ role: 'assistant', content: raw });
+
+    if (txMatch) {
+      try {
+        const tx = JSON.parse(txMatch[1]);
+        if (tx.amount && tx.category) {
+          transactions.push({ ...tx, id: Date.now() });
+          await save();
+          const cat = CATS[tx.category];
+          setTimeout(() => addSystem(`✓ 記録しました：${tx.description}  ¥${tx.amount.toLocaleString()}  [${cat.label} / ${tx.subcategory}]`), 200);
+        }
+      } catch(e) {}
+    }
+  } catch(e) {
+    setLoading(false);
+    addMsg('assistant', 'ごめん、エラーが起きちゃった。もう一度試してみて！');
+  }
+}
+
+// ── Dashboard ──
+function renderDash() {
+  const month = document.querySelector('#dashMonth')?.value || new Date().toISOString().slice(0,7);
+  const txs = transactions.filter(t => t.date?.startsWith(month));
+  const totalOut = txs.reduce((s,t) => s + (t.amount||0), 0);
+  const remaining = allowance - totalOut;
+  const byCategory = {};
+  Object.keys(CATS).forEach(k => { byCategory[k] = txs.filter(t=>t.category===k).reduce((s,t)=>s+t.amount,0); });
+  const bySub = {};
+  txs.forEach(t => { bySub[t.subcategory] = (bySub[t.subcategory]||0) + t.amount; });
+
+  document.getElementById('dashContent').innerHTML = `
+    <div class="setting-row">
+      <span class="setting-label">月のお小遣い</span>
+      <input class="setting-input" type="number" id="allowanceInput" value="${allowance}" onchange="updateAllowance(this.value)">
+    </div>
+
+    <div class="month-row">
+      <span class="month-label">表示月</span>
+      <input type="month" id="dashMonth" value="${month}" onchange="renderDash()">
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card"><div class="s-label">支出合計</div><div class="s-val">¥${totalOut.toLocaleString()}</div></div>
+      <div class="summary-card"><div class="s-label">残高</div><div class="s-val ${remaining<0?'danger':'ok'}">¥${remaining.toLocaleString()}</div></div>
+      <div class="summary-card"><div class="s-label">件数</div><div class="s-val">${txs.length}件</div></div>
+    </div>
+
+    <div class="cf-card">
+      <div class="cf-title">投資・消費・浪費の内訳</div>
+      ${Object.entries(CATS).map(([k,cat]) => {
+        const amt = byCategory[k]||0;
+        const pct = totalOut>0 ? Math.round(amt/totalOut*100) : 0;
+        return `<div class="cf-row">
+          <div class="cf-label">
+            <span><span class="cf-dot" style="background:${cat.mid}"></span>${cat.label}</span>
+            <span>¥${amt.toLocaleString()} <span class="cf-pct">${pct}%</span></span>
+          </div>
+          <div class="cf-bar-bg"><div class="cf-bar" style="width:${pct}%;background:${cat.mid}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${Object.keys(bySub).length > 0 ? `
+    <div class="sub-card">
+      <div class="cf-title">カテゴリ別</div>
+      <div class="sub-grid">
+        ${Object.entries(bySub).sort((a,b)=>b[1]-a[1]).map(([k,v]) => `
+          <div class="sub-item"><span class="sub-name">${k}</span><span class="sub-amt">¥${v.toLocaleString()}</span></div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
+    ${txs.length > 0 ? `
+    <div class="chart-card">
+      <div class="cf-title">支出グラフ（今月）</div>
+      <div class="chart-wrap"><canvas id="cfChart"></canvas></div>
+    </div>` : ''}
+
+    <div class="tx-section">
+      <div class="tx-title">今月の記録</div>
+      ${txs.length === 0
+        ? '<div class="tx-empty">まだ記録がありません<br>チャットから支出を記録してみよう！</div>'
+        : [...txs].reverse().map(tx => {
+            const cat = CATS[tx.category] || {label:'?', bg:'#eee', color:'#888'};
+            return `<div class="tx-item">
+              <div class="tx-left">
+                <div class="tx-icon" style="background:${cat.bg};color:${cat.color}">${cat.label.charAt(0)}</div>
+                <div>
+                  <div class="tx-desc">${tx.description}</div>
+                  <div class="tx-meta">${tx.date} · ${tx.subcategory||''}</div>
+                </div>
+              </div>
+              <div class="tx-amt">¥${(tx.amount||0).toLocaleString()}</div>
+            </div>`;
+          }).join('')
+      }
+    </div>
+
+    ${txs.length > 0 ? `
+    <button class="analyze-btn" onclick="analyzeMonth('${month}')">🤖 AIに今月を振り返ってもらう →</button>` : ''}
+  `;
+
+  // Draw chart
+  if (txs.length > 0) {
+    setTimeout(() => {
+      const ctx = document.getElementById('cfChart');
+      if (!ctx) return;
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.values(CATS).map(c=>c.label),
+          datasets: [{
+            data: Object.keys(CATS).map(k=>byCategory[k]||0),
+            backgroundColor: Object.values(CATS).map(c=>c.bg),
+            borderColor: Object.values(CATS).map(c=>c.mid),
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` ¥${ctx.parsed.toLocaleString()}` } }
+          },
+          cutout: '62%',
+        }
+      });
+    }, 100);
+  }
+}
+
+async function updateAllowance(val) {
+  allowance = parseInt(val) || 5000;
+  await save();
+  renderDash();
+}
+
+function analyzeMonth(month) {
+  const txs = transactions.filter(t => t.date?.startsWith(month));
+  const summary = txs.map(t => `${t.date} ${t.description} ¥${t.amount} [${CATS[t.category]?.label}/${t.subcategory}]`).join('\n');
+  const msg = `${month}の支出を振り返って、アドバイスをください。\n\n記録データ:\n${summary}`;
+  switchTab('chat');
+  document.getElementById('chatInput').value = msg;
+  sendMsg();
+}
+
+// ── Init ──
+load().then(() => {});
+</script>
+</body>
+</html>
