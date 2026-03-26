@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'おこづかいC/Fノート',
+  title: 'おこづかいC/Fノート ✨',
   description: '投資・消費・浪費を仕分けて、お金の流れを見える化しよう',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
@@ -14,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body className="bg-[#f8f6f2] antialiased">{children}</body>
+      <body className="bg-gradient-to-b from-[#fdf2f8] via-[#faf5ff] to-[#ede9fe] antialiased">
+        {children}
+      </body>
     </html>
   );
 }

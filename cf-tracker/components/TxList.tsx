@@ -14,38 +14,41 @@ interface Transaction {
 export default function TxList({ transactions }: { transactions: Transaction[] }) {
   if (transactions.length === 0) {
     return (
-      <div className="py-6 text-center text-[13px] text-[#aaa]">
-        まだ記録がありません
-        <br />
-        チャットから支出を記録してみよう！
+      <div className="py-8 text-center">
+        <div className="text-3xl">🌟</div>
+        <div className="mt-2 text-[13px] text-[#a78bfa]">
+          まだきろくがないよ
+          <br />
+          チャットから支出をきろくしてみよう！
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       {transactions.map((tx) => {
-        const cat = CATS[tx.category] || { label: '?', bg: '#eee', color: '#888' };
+        const cat = CATS[tx.category] || { label: '?', emoji: '❓', bg: '#f5f3ff', color: '#888', mid: '#ccc' };
         return (
           <div
             key={tx.id}
-            className="flex items-center justify-between border-b border-[#f0ede8] py-2 last:border-b-0"
+            className="flex items-center justify-between rounded-xl bg-[#faf5ff] px-3 py-2.5"
           >
             <div className="flex items-center gap-2.5">
               <div
-                className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full text-[13px] font-semibold"
-                style={{ background: cat.bg, color: cat.color }}
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-base"
+                style={{ background: cat.bg }}
               >
-                {cat.label.charAt(0)}
+                {cat.emoji}
               </div>
               <div>
-                <div className="text-[13px] font-medium text-[#1a1a18]">{tx.description}</div>
-                <div className="mt-px text-[11px] text-[#aaa]">
+                <div className="text-[13px] font-medium text-[#4a3660]">{tx.description}</div>
+                <div className="mt-px text-[11px] text-[#a78bfa]">
                   {tx.date} · {tx.subcategory || ''}
                 </div>
               </div>
             </div>
-            <div className="text-sm font-semibold text-[#1a1a18]">
+            <div className="text-sm font-bold" style={{ color: cat.color }}>
               ¥{tx.amount.toLocaleString()}
             </div>
           </div>

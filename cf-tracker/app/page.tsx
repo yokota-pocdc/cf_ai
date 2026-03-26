@@ -26,38 +26,38 @@ export default function Home() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-white shadow-[0_0_40px_rgba(0,0,0,0.06)]">
+    <div className="mx-auto flex min-h-screen max-w-[480px] flex-col overflow-hidden rounded-none bg-white/80 shadow-[0_0_60px_rgba(168,85,247,0.08)] backdrop-blur-sm sm:my-4 sm:rounded-3xl sm:min-h-[calc(100vh-2rem)]">
       {/* Header */}
-      <div className="px-5 pt-[18px]">
-        <h1 className="text-[17px] font-semibold tracking-wide text-[#1a1a18]">
-          おこづかいC/Fノート
+      <div className="bg-gradient-to-r from-[#c084fc] via-[#e879f9] to-[#f9a8d4] px-5 pb-3 pt-5">
+        <h1 className="text-lg font-bold tracking-wide text-white drop-shadow-sm">
+          ✨ おこづかいノート
         </h1>
-        <p className="mt-0.5 text-xs text-[#888]">
-          投資・消費・浪費を仕分けて、お金の流れを見える化しよう
+        <p className="mt-0.5 text-[11px] text-white/80">
+          おかねの流れを見える化しよう！
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="mt-3.5 flex border-b border-[#eee]">
+      <div className="flex bg-gradient-to-r from-[#faf5ff] to-[#fdf2f8]">
         <button
           onClick={() => setTab('chat')}
-          className={`flex-1 border-b-2 py-2.5 text-[13px] transition-all ${
+          className={`flex-1 border-b-[3px] py-2.5 text-[13px] font-medium transition-all ${
             tab === 'chat'
-              ? 'border-[#1a1a18] font-semibold text-[#1a1a18]'
-              : 'border-transparent text-[#888]'
+              ? 'border-[#c084fc] text-[#9333ea]'
+              : 'border-transparent text-[#c4b5d0]'
           }`}
         >
-          📝 記録する
+          💬 きろくする
         </button>
         <button
           onClick={() => setTab('dash')}
-          className={`flex-1 border-b-2 py-2.5 text-[13px] transition-all ${
+          className={`flex-1 border-b-[3px] py-2.5 text-[13px] font-medium transition-all ${
             tab === 'dash'
-              ? 'border-[#1a1a18] font-semibold text-[#1a1a18]'
-              : 'border-transparent text-[#888]'
+              ? 'border-[#c084fc] text-[#9333ea]'
+              : 'border-transparent text-[#c4b5d0]'
           }`}
         >
-          📊 ダッシュボード
+          📊 まとめ
         </button>
       </div>
 

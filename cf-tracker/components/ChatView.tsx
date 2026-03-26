@@ -21,7 +21,7 @@ export default function ChatView() {
     {
       role: 'assistant',
       content:
-        'こんにちは！今日の支出を教えてね🌱\n「コンビニで350円使った」みたいに話しかけてくれたら、一緒に記録しよう。',
+        '七海ちゃん、こんにちは！🌸\nきょうなにか買ったものある？\n「コンビニで350円つかった」みたいに教えてくれたら、いっしょに記録しよう✨',
     },
   ]);
   const [input, setInput] = useState('');
@@ -49,7 +49,6 @@ export default function ChatView() {
     setIsLoading(true);
 
     try {
-      // Fetch recent transactions for context
       const txRes = await fetch('/api/transactions');
       const txAll = await txRes.json();
       const settingsRes = await fetch('/api/settings');
@@ -65,8 +64,10 @@ export default function ChatView() {
         )
         .join('\n');
 
-      const system = `あなたは中学1年生の女の子のお小遣い管理AIアシスタントです。
+      const system = `あなたは中学1年生の女の子「七海ちゃん」のお小遣い管理AIアシスタントです。
+名前は「七海ちゃん」と呼んでください。
 友達のように親しみやすく、でも押しつけがましくなく話してください。
+七海ちゃんはにじさんじが好きです。
 
 【あなたの役割】
 支出の記録を手伝い、「投資・消費・浪費」に仕分けする練習を通じて金銭感覚を育てます。
@@ -110,9 +111,8 @@ ${txSummary || 'まだ記録なし'}
       });
 
       const data = await res.json();
-      const raw = data.content?.[0]?.text || 'ごめん、エラーが起きちゃった😢';
+      const raw = data.content?.[0]?.text || 'ごめんね、エラーが起きちゃった😢';
 
-      // Extract transaction
       const txMatch = raw.match(/<tx>([\s\S]*?)<\/tx>/);
       const clean = raw.replace(/<tx>[\s\S]*?<\/tx>/g, '').trim();
 
@@ -124,7 +124,6 @@ ${txSummary || 'まだ記録なし'}
         try {
           const tx: TransactionData = JSON.parse(txMatch[1]);
           if (tx.amount && tx.category) {
-            // Save to DB
             await fetch('/api/transactions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -133,7 +132,7 @@ ${txSummary || 'まだ記録なし'}
             const cat = CATS[tx.category];
             newMessages.push({
               role: 'system',
-              content: `✓ 記録しました：${tx.description}  ¥${tx.amount.toLocaleString()}  [${cat.label} / ${tx.subcategory}]`,
+              content: `${cat.emoji} きろくしたよ！ ${tx.description}  ¥${tx.amount.toLocaleString()}（${cat.label}）`,
             });
           }
         } catch {
@@ -145,7 +144,7 @@ ${txSummary || 'まだ記録なし'}
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'ごめん、エラーが起きちゃった。もう一度試してみて！' },
+        { role: 'assistant', content: 'ごめんね、エラーが起きちゃった。もういちどためしてみて！' },
       ]);
     } finally {
       setIsLoading(false);
@@ -153,21 +152,26 @@ ${txSummary || 'まだ記録なし'}
   };
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col bg-gradient-to-b from-[#faf5ff]/50 to-white/50">
       {/* Messages */}
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-4 pb-2">
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 pb-2">
         {messages.map((msg, i) => (
           <div
             key={i}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
+            {msg.role === 'assistant' && (
+              <div className="mr-1.5 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#c084fc] to-[#e879f9] text-sm">
+                🐱
+              </div>
+            )}
             <div
-              className={`max-w-[82%] px-3.5 py-2.5 text-sm leading-relaxed ${
+              className={`max-w-[78%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
                 msg.role === 'user'
-                  ? 'rounded-[18px_18px_4px_18px] bg-[#1a1a18] text-white'
+                  ? 'rounded-[20px_20px_4px_20px] bg-gradient-to-r from-[#c084fc] to-[#e879f9] text-white shadow-sm'
                   : msg.role === 'system'
-                    ? 'w-full rounded-[10px] bg-[#E1F5EE] text-[13px] text-[#0F6E56]'
-                    : 'rounded-[18px_18px_18px_4px] bg-[#f4f2ee] text-[#1a1a18]'
+                    ? 'w-full rounded-2xl border border-[#d1fae5] bg-[#ecfdf5] px-3 py-2 text-[13px] text-[#059669]'
+                    : 'rounded-[20px_20px_20px_4px] border border-[#f3e8ff] bg-white text-[#4a3660] shadow-sm'
               }`}
               dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, '<br>') }}
             />
@@ -175,10 +179,13 @@ ${txSummary || 'まだ記録なし'}
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="flex items-center gap-1 rounded-[18px_18px_18px_4px] bg-[#f4f2ee] px-4 py-3">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ccc]" />
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ccc] [animation-delay:0.2s]" />
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ccc] [animation-delay:0.4s]" />
+            <div className="mr-1.5 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#c084fc] to-[#e879f9] text-sm">
+              🐱
+            </div>
+            <div className="flex items-center gap-1.5 rounded-[20px_20px_20px_4px] border border-[#f3e8ff] bg-white px-4 py-3 shadow-sm">
+              <span className="dot-bounce h-2 w-2 rounded-full bg-[#d8b4fe]" />
+              <span className="dot-bounce h-2 w-2 rounded-full bg-[#e879f9]" />
+              <span className="dot-bounce h-2 w-2 rounded-full bg-[#f9a8d4]" />
             </div>
           </div>
         )}
@@ -186,36 +193,37 @@ ${txSummary || 'まだ記録なし'}
       </div>
 
       {/* Quick prompts */}
-      <div className="flex flex-wrap gap-1.5 px-4 pb-2.5">
-        {['今日の支出は？', '今月を振り返る', '浪費を減らしたい'].map((q, i) => {
-          const prompts = ['今日の支出を教えて', '今月の振り返りをして', '浪費を減らすコツを教えて'];
-          return (
-            <button
-              key={i}
-              onClick={() => sendMessage(prompts[i])}
-              className="whitespace-nowrap rounded-2xl border border-[#e0ddd8] bg-[#faf9f7] px-2.5 py-1 text-xs text-[#555] hover:bg-[#f0ede8]"
-            >
-              {q}
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap gap-1.5 px-4 pb-2">
+        {[
+          { label: '✏️ きょうの支出', prompt: '今日の支出を教えて' },
+          { label: '📅 今月のふりかえり', prompt: '今月の振り返りをして' },
+          { label: '💡 節約のコツ', prompt: '浪費を減らすコツを教えて' },
+        ].map((q, i) => (
+          <button
+            key={i}
+            onClick={() => sendMessage(q.prompt)}
+            className="whitespace-nowrap rounded-full border border-[#e9d5ff] bg-white px-3 py-1.5 text-xs text-[#9333ea] shadow-sm transition-colors hover:bg-[#faf5ff]"
+          >
+            {q.label}
+          </button>
+        ))}
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 border-t border-[#eee] px-4 py-3">
+      <div className="flex gap-2 border-t border-[#f3e8ff] bg-white/80 px-4 py-3 backdrop-blur-sm">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && sendMessage()}
-          placeholder="今日の支出を教えて..."
-          className="flex-1 rounded-[22px] border border-[#e0ddd8] bg-[#faf9f7] px-4 py-2 text-base outline-none focus:border-[#999] focus:bg-white"
+          placeholder="きょうの支出をおしえてね..."
+          className="flex-1 rounded-full border border-[#e9d5ff] bg-[#faf5ff] px-4 py-2.5 text-base text-[#4a3660] outline-none placeholder:text-[#c4b5d0] focus:border-[#c084fc] focus:bg-white focus:ring-2 focus:ring-[#c084fc]/20"
         />
         <button
           onClick={() => sendMessage()}
           disabled={isLoading}
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#1a1a18] text-white transition-opacity disabled:opacity-35"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#c084fc] to-[#e879f9] text-lg text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-40"
         >
-          ↑
+          ▲
         </button>
       </div>
     </div>
