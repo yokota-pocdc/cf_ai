@@ -26,6 +26,7 @@ const INITIAL_MESSAGES: Message[] = [
 
 const STORAGE_KEY_MESSAGES = 'cf-chat-messages';
 const STORAGE_KEY_HISTORY = 'cf-chat-history';
+const STORAGE_KEY_LAST_MONTH = 'cf-last-active-month';
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
@@ -55,6 +56,23 @@ export default function ChatView() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading, scrollToBottom]);
+
+  // Monthly greeting check
+  useEffect(() => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const lastMonth = localStorage.getItem(STORAGE_KEY_LAST_MONTH);
+    if (lastMonth && lastMonth !== currentMonth) {
+      const monthName = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' });
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'system',
+          content: `🌸 ${monthName}になりました！新しい月のスタートだよ。今月もお小遣い管理がんばろう✨`,
+        },
+      ]);
+    }
+    localStorage.setItem(STORAGE_KEY_LAST_MONTH, currentMonth);
+  }, []);
 
   // Persist to localStorage
   useEffect(() => {

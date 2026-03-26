@@ -168,7 +168,21 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
       {/* Transaction list */}
       <div className="rounded-2xl border border-[#f3e8ff] bg-white p-4 shadow-sm">
         <div className="mb-2 text-[13px] font-bold text-[#7c3aed]">📋 今月の記録</div>
-        <TxList transactions={transactions} />
+        <TxList
+          transactions={transactions}
+          onDelete={async (id) => {
+            await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' });
+            loadData();
+          }}
+          onUpdate={async (tx) => {
+            await fetch('/api/transactions', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(tx),
+            });
+            loadData();
+          }}
+        />
       </div>
 
       {/* Analyze button */}

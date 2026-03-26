@@ -37,6 +37,23 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(row, { status: 201 });
 }
 
+export async function PUT(req: NextRequest) {
+  const body = await req.json();
+  const { id, date, amount, description, category, subcategory } = body;
+
+  if (!id) {
+    return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+  }
+
+  const db = getDb();
+  db.prepare(
+    'UPDATE transactions SET date = ?, amount = ?, description = ?, category = ?, subcategory = ? WHERE id = ?'
+  ).run(date, amount, description, category, subcategory || null, id);
+
+  const row = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id) as Transaction;
+  return NextResponse.json(row);
+}
+
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
