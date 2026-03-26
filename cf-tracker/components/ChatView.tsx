@@ -16,13 +16,15 @@ interface TransactionData {
   date: string;
 }
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    role: 'assistant',
-    content:
-      '七海ちゃん、こんにちは！🌸\nきょうなにか買ったものある？\n「コンビニで350円つかった」みたいに教えてくれたら、いっしょに記録しよう✨',
-  },
-];
+function getInitialMessages(name?: string): Message[] {
+  const greeting = name ? `${name}、こんにちは！` : 'こんにちは！';
+  return [
+    {
+      role: 'assistant',
+      content: `${greeting}🌸\n今日なにか買ったものある？\n「コンビニで350円使った」みたいに教えてくれたら、一緒に記録しよう✨`,
+    },
+  ];
+}
 
 const STORAGE_KEY_MESSAGES = 'cf-chat-messages';
 const STORAGE_KEY_HISTORY = 'cf-chat-history';
@@ -40,13 +42,14 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 
 export default function ChatView() {
   const [messages, setMessages] = useState<Message[]>(() =>
-    loadFromStorage(STORAGE_KEY_MESSAGES, INITIAL_MESSAGES)
+    loadFromStorage(STORAGE_KEY_MESSAGES, getInitialMessages())
   );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>(() =>
     loadFromStorage(STORAGE_KEY_HISTORY, [])
   );
+  const [userName, setUserName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -56,6 +59,16 @@ export default function ChatView() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading, scrollToBottom]);
+
+  // Load user name from settings
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.userName) setUserName(data.userName);
+      })
+      .catch(() => {});
+  }, []);
 
   // Monthly greeting check
   useEffect(() => {
@@ -84,7 +97,7 @@ export default function ChatView() {
   }, [chatHistory]);
 
   const clearChat = () => {
-    setMessages(INITIAL_MESSAGES);
+    setMessages(getInitialMessages(userName));
     setChatHistory([]);
   };
 
@@ -105,6 +118,7 @@ export default function ChatView() {
       const settingsRes = await fetch('/api/settings');
       const settings = await settingsRes.json();
       const allowance = settings.allowance || 5000;
+      const name = settings.userName || '';
 
       const today = new Date().toISOString().slice(0, 10);
       const txSummary = txAll
@@ -115,10 +129,13 @@ export default function ChatView() {
         )
         .join('\n');
 
-      const system = `あなたは中学1年生の女の子「七海ちゃん」のお小遣い管理AIアシスタントです。
-名前は「七海ちゃん」と呼んでください。
+      const nameInstruction = name
+        ? `ユーザーの名前は「${name}」です。名前で呼んでください。`
+        : 'ユーザーの名前は設定されていません。「きみ」などで呼んでください。';
+
+      const system = `あなたはお小遣い管理AIアシスタントです。
+${nameInstruction}
 友達のように親しみやすく、でも押しつけがましくなく話してください。
-七海ちゃんはにじさんじが好きです。
 
 【あなたの役割】
 支出の記録を手伝い、「投資・消費・浪費」に仕分けする練習を通じて金銭感覚を育てます。
@@ -195,7 +212,7 @@ ${txSummary || 'まだ記録なし'}
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'ごめんね、エラーが起きちゃった。もういちどためしてみて！' },
+        { role: 'assistant', content: 'ごめんね、エラーが起きちゃった。もう一度試してみて！' },
       ]);
     } finally {
       setIsLoading(false);

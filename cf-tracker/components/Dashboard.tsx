@@ -17,6 +17,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allowance, setAllowance] = useState(5000);
+  const [userName, setUserName] = useState('');
 
   const loadData = useCallback(async () => {
     const [txRes, settingsRes] = await Promise.all([
@@ -27,6 +28,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
     const settingsData = await settingsRes.json();
     setTransactions(txData);
     setAllowance(settingsData.allowance || 5000);
+    setUserName(settingsData.userName || '');
   }, [month]);
 
   useEffect(() => {
@@ -58,6 +60,15 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
     });
   };
 
+  const updateUserName = async (val: string) => {
+    setUserName(val);
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userName: val }),
+    });
+  };
+
   const handleAnalyze = () => {
     const summary = transactions
       .map(
@@ -70,6 +81,18 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
 
   return (
     <div className="flex flex-col gap-3 overflow-y-auto bg-gradient-to-b from-[#faf5ff]/50 to-white/50 p-4">
+      {/* User name setting */}
+      <div className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-[#fdf2f8] to-[#faf5ff] px-4 py-3">
+        <span className="text-[13px] font-medium text-[#9333ea]">👤 名前</span>
+        <input
+          type="text"
+          value={userName}
+          onChange={(e) => updateUserName(e.target.value)}
+          placeholder="名前を入力"
+          className="w-[120px] rounded-xl border border-[#e9d5ff] bg-white px-2 py-1 text-right text-sm text-[#4a3660] outline-none placeholder:text-[#c4b5d0] focus:border-[#c084fc]"
+        />
+      </div>
+
       {/* Allowance setting */}
       <div className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-[#fdf2f8] to-[#faf5ff] px-4 py-3">
         <span className="text-[13px] font-medium text-[#9333ea]">💰 月のお小遣い</span>

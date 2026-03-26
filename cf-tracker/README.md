@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# おこづかいC/Fノート ✨
 
-## Getting Started
+AIチャットでお小遣いを「投資・消費・浪費」に分類しながら記録する、子ども向け金融教育Webアプリ。
 
-First, run the development server:
+## 特徴
+
+- **AIチャットで記録** — 「コンビニで350円使った」と話しかけるだけで、AIが一緒に分類を考えてくれる
+- **投資・消費・浪費の3分類** — キャッシュフロー思考を自然に身につける
+- **浪費を責めない設計** — 「何%まで浪費OKか自分で決めよう」というスタンス
+- **ダッシュボード** — 月次の支出合計、残高、カテゴリ別内訳をビジュアルに表示
+- **PWA対応** — ホーム画面に追加してアプリのように使える
+- **セルフホスト可能** — 自分のサーバーで動かせるオープンソース
+
+## スクリーンショット
+
+| チャット画面 | ダッシュボード |
+|:---:|:---:|
+| AIと会話しながら支出を記録 | 月次の支出状況を一覧 |
+
+## 技術スタック
+
+- **フレームワーク**: Next.js 14 (App Router)
+- **スタイリング**: Tailwind CSS
+- **データベース**: SQLite (better-sqlite3)
+- **AI**: Claude API (Anthropic)
+- **デプロイ**: Railway / EC2 + nginx / どこでも
+
+## セットアップ
+
+### 1. クローン & インストール
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/your-username/cf-tracker.git
+cd cf-tracker
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 環境変数
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.local.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local` を編集：
 
-## Learn More
+```
+ANTHROPIC_API_KEY=sk-ant-xxxxx    # 必須: Anthropic APIキー
+DB_PATH=./data/cf-tracker.db      # 任意: DBファイルパス（デフォルト: ./data/cf-tracker.db）
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. 起動
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# 開発モード
+npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# 本番ビルド & 起動
+npm run build
+npm start
+```
 
-## Deploy on Vercel
+http://localhost:3000 でアクセス。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. 初期設定（ブラウザで）
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ダッシュボードタブから以下を設定：
+- **名前** — AIがこの名前で呼びかけてくれる
+- **月のお小遣い** — 月の予算額
+
+## デプロイ
+
+### EC2 + nginx
+
+```bash
+# アプリをビルド
+npm run build
+
+# pm2で永続化（ポートは既存アプリと被らないように）
+PORT=3003 pm2 start npm --name "cf-tracker" -- start
+
+# nginx設定（/etc/nginx/conf.d/cf.conf）
+# → cf.your-domain.com を localhost:3003 にプロキシ
+
+# SSL証明書
+sudo certbot --nginx -d cf.your-domain.com
+```
+
+### Railway
+
+```bash
+railway login
+railway init
+railway volume add
+railway up
+railway variables set ANTHROPIC_API_KEY=sk-ant-xxxxx
+railway variables set DB_PATH=/data/cf-tracker.db
+```
+
+## カテゴリ定義
+
+| カテゴリ | 説明 | 例 |
+|:---:|---|---|
+| 🌱 投資 | 学び・成長・健康につながる支出 | 本、習い事、スポーツ用品 |
+| 🛒 消費 | 日常生活に必要な支出 | 食事、交通費、文具 |
+| 🎀 浪費 | 衝動的・無駄な支出 | ガチャ、衝動買い |
+
+## 機能一覧
+
+- [x] AIチャットで支出記録・分類
+- [x] ダッシュボード（月次集計・カテゴリ内訳）
+- [x] 記録の個別編集・削除
+- [x] 全記録リセット
+- [x] チャット履歴の永続化（localStorage）
+- [x] 月初の応援メッセージ
+- [x] PWA対応
+- [x] ユーザー名のカスタマイズ
+
+## ライセンス
+
+MIT
