@@ -4,6 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'おこづかいC/Fノート',
   description: '投資・消費・浪費を仕分けて、お金の流れを見える化しよう',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
 export default function RootLayout({

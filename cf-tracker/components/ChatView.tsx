@@ -208,7 +208,7 @@ ${txSummary || 'まだ記録なし'}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && sendMessage()}
           placeholder="今日の支出を教えて..."
-          className="flex-1 rounded-[22px] border border-[#e0ddd8] bg-[#faf9f7] px-4 py-2 text-sm outline-none focus:border-[#999] focus:bg-white"
+          className="flex-1 rounded-[22px] border border-[#e0ddd8] bg-[#faf9f7] px-4 py-2 text-base outline-none focus:border-[#999] focus:bg-white"
         />
         <button
           onClick={() => sendMessage()}
