@@ -132,7 +132,7 @@ ${txSummary || 'まだ記録なし'}
             const cat = CATS[tx.category];
             newMessages.push({
               role: 'system',
-              content: `${cat.emoji} きろくしたよ！ ${tx.description}  ¥${tx.amount.toLocaleString()}（${cat.label}）`,
+              content: `${cat.emoji} 記録しました！ ${tx.description}  ¥${tx.amount.toLocaleString()}（${cat.label}）`,
             });
           }
         } catch {
@@ -195,8 +195,8 @@ ${txSummary || 'まだ記録なし'}
       {/* Quick prompts */}
       <div className="flex flex-wrap gap-1.5 px-4 pb-2">
         {[
-          { label: '✏️ きょうの支出', prompt: '今日の支出を教えて' },
-          { label: '📅 今月のふりかえり', prompt: '今月の振り返りをして' },
+          { label: '✏️ 今日の支出', prompt: '今日の支出を教えて' },
+          { label: '📅 今月の振り返り', prompt: '今月の振り返りをして' },
           { label: '💡 節約のコツ', prompt: '浪費を減らすコツを教えて' },
         ].map((q, i) => (
           <button
@@ -215,7 +215,7 @@ ${txSummary || 'まだ記録なし'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && sendMessage()}
-          placeholder="きょうの支出をおしえてね..."
+          placeholder="今日の支出を教えてね..."
           className="flex-1 rounded-full border border-[#e9d5ff] bg-[#faf5ff] px-4 py-2.5 text-base text-[#4a3660] outline-none placeholder:text-[#c4b5d0] focus:border-[#c084fc] focus:bg-white focus:ring-2 focus:ring-[#c084fc]/20"
         />
         <button

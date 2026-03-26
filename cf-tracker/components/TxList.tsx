@@ -17,9 +17,9 @@ export default function TxList({ transactions }: { transactions: Transaction[] }
       <div className="py-8 text-center">
         <div className="text-3xl">🌟</div>
         <div className="mt-2 text-[13px] text-[#a78bfa]">
-          まだきろくがないよ
+          まだ記録がないよ
           <br />
-          チャットから支出をきろくしてみよう！
+          チャットから支出を記録してみよう！
         </div>
       </div>
     );

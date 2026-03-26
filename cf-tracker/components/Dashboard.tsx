@@ -72,7 +72,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
     <div className="flex flex-col gap-3 overflow-y-auto bg-gradient-to-b from-[#faf5ff]/50 to-white/50 p-4">
       {/* Allowance setting */}
       <div className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-[#fdf2f8] to-[#faf5ff] px-4 py-3">
-        <span className="text-[13px] font-medium text-[#9333ea]">💰 月のおこづかい</span>
+        <span className="text-[13px] font-medium text-[#9333ea]">💰 月のお小遣い</span>
         <div className="flex items-center gap-1">
           <span className="text-sm text-[#9333ea]">¥</span>
           <input
@@ -86,7 +86,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
 
       {/* Month selector */}
       <div className="flex items-center justify-between px-1">
-        <span className="text-[13px] text-[#a78bfa]">📅 ひょうじ月</span>
+        <span className="text-[13px] text-[#a78bfa]">📅 表示月</span>
         <input
           type="month"
           value={month}
@@ -98,11 +98,11 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-2xl bg-gradient-to-br from-[#faf5ff] to-[#fdf2f8] px-2 py-3 text-center shadow-sm">
-          <div className="text-[11px] text-[#a78bfa]">つかった</div>
+          <div className="text-[11px] text-[#a78bfa]">支出合計</div>
           <div className="mt-0.5 text-lg font-bold text-[#7c3aed]">¥{totalOut.toLocaleString()}</div>
         </div>
         <div className="rounded-2xl bg-gradient-to-br from-[#ecfdf5] to-[#d1fae5] px-2 py-3 text-center shadow-sm">
-          <div className="text-[11px] text-[#34d399]">のこり</div>
+          <div className="text-[11px] text-[#34d399]">残高</div>
           <div
             className={`mt-0.5 text-lg font-bold ${remaining < 0 ? 'text-[#e11d48]' : 'text-[#059669]'}`}
           >
@@ -110,7 +110,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
           </div>
         </div>
         <div className="rounded-2xl bg-gradient-to-br from-[#fdf2f8] to-[#ffe4e6] px-2 py-3 text-center shadow-sm">
-          <div className="text-[11px] text-[#f9a8d4]">けんすう</div>
+          <div className="text-[11px] text-[#f9a8d4]">件数</div>
           <div className="mt-0.5 text-lg font-bold text-[#e11d48]">{transactions.length}件</div>
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
       {/* Category breakdown bars */}
       <div className="rounded-2xl border border-[#f3e8ff] bg-white p-4 shadow-sm">
         <div className="mb-3 text-[13px] font-bold text-[#7c3aed]">
-          ✨ カテゴリべつ
+          ✨ カテゴリ別
         </div>
         {(Object.entries(CATS) as [Category, (typeof CATS)[Category]][]).map(([k, cat]) => {
           const amt = byCategory[k] || 0;
@@ -148,7 +148,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
       {/* Subcategory breakdown */}
       {Object.keys(bySub).length > 0 && (
         <div className="rounded-2xl border border-[#f3e8ff] bg-white p-4 shadow-sm">
-          <div className="mb-2.5 text-[13px] font-bold text-[#7c3aed]">🏷️ こまかい内訳</div>
+          <div className="mb-2.5 text-[13px] font-bold text-[#7c3aed]">🏷️ 細かい内訳</div>
           <div className="grid grid-cols-2 gap-1.5">
             {Object.entries(bySub)
               .sort((a, b) => b[1] - a[1])
@@ -167,7 +167,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
 
       {/* Transaction list */}
       <div className="rounded-2xl border border-[#f3e8ff] bg-white p-4 shadow-sm">
-        <div className="mb-2 text-[13px] font-bold text-[#7c3aed]">📋 今月のきろく</div>
+        <div className="mb-2 text-[13px] font-bold text-[#7c3aed]">📋 今月の記録</div>
         <TxList transactions={transactions} />
       </div>
 
@@ -177,7 +177,7 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
           onClick={handleAnalyze}
           className="w-full rounded-2xl bg-gradient-to-r from-[#c084fc] to-[#e879f9] py-3.5 text-[13px] font-bold text-white shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
         >
-          🤖 AIにふりかえってもらう →
+          🤖 AIに振り返ってもらう →
         </button>
       )}
     </div>

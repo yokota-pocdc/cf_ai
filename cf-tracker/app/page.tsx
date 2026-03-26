@@ -33,7 +33,7 @@ export default function Home() {
           ✨ おこづかいノート
         </h1>
         <p className="mt-0.5 text-[11px] text-white/80">
-          おかねの流れを見える化しよう！
+          投資・消費・浪費を仕分けて、お金の流れを見える化しよう！
         </p>
       </div>
 
@@ -47,7 +47,7 @@ export default function Home() {
               : 'border-transparent text-[#c4b5d0]'
           }`}
         >
-          💬 きろくする
+          💬 記録する
         </button>
         <button
           onClick={() => setTab('dash')}
@@ -57,7 +57,7 @@ export default function Home() {
               : 'border-transparent text-[#c4b5d0]'
           }`}
         >
-          📊 まとめ
+          📊 ダッシュボード
         </button>
       </div>
 
