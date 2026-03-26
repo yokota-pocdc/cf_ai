@@ -16,17 +16,36 @@ interface TransactionData {
   date: string;
 }
 
+const INITIAL_MESSAGES: Message[] = [
+  {
+    role: 'assistant',
+    content:
+      '七海ちゃん、こんにちは！🌸\nきょうなにか買ったものある？\n「コンビニで350円つかった」みたいに教えてくれたら、いっしょに記録しよう✨',
+  },
+];
+
+const STORAGE_KEY_MESSAGES = 'cf-chat-messages';
+const STORAGE_KEY_HISTORY = 'cf-chat-history';
+
+function loadFromStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function ChatView() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content:
-        '七海ちゃん、こんにちは！🌸\nきょうなにか買ったものある？\n「コンビニで350円つかった」みたいに教えてくれたら、いっしょに記録しよう✨',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() =>
+    loadFromStorage(STORAGE_KEY_MESSAGES, INITIAL_MESSAGES)
+  );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
+  const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>(() =>
+    loadFromStorage(STORAGE_KEY_HISTORY, [])
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -36,6 +55,20 @@ export default function ChatView() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading, scrollToBottom]);
+
+  // Persist to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(chatHistory));
+  }, [chatHistory]);
+
+  const clearChat = () => {
+    setMessages(INITIAL_MESSAGES);
+    setChatHistory([]);
+  };
 
   const sendMessage = async (text?: string) => {
     const msg = text || input.trim();
@@ -194,6 +227,14 @@ ${txSummary || 'まだ記録なし'}
 
       {/* Quick prompts */}
       <div className="flex flex-wrap gap-1.5 px-4 pb-2">
+        {messages.length > 1 && (
+          <button
+            onClick={clearChat}
+            className="whitespace-nowrap rounded-full border border-[#fecdd3] bg-white px-3 py-1.5 text-xs text-[#e11d48] shadow-sm transition-colors hover:bg-[#fff1f2]"
+          >
+            🗑️ チャットをリセット
+          </button>
+        )}
         {[
           { label: '✏️ 今日の支出', prompt: '今日の支出を教えて' },
           { label: '📅 今月の振り返り', prompt: '今月の振り返りをして' },
