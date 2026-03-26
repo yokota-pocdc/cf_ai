@@ -40,12 +40,19 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
+  const all = searchParams.get('all');
+
+  const db = getDb();
+
+  if (all === 'true') {
+    db.prepare('DELETE FROM transactions').run();
+    return NextResponse.json({ success: true });
+  }
 
   if (!id) {
     return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 });
   }
 
-  const db = getDb();
   db.prepare('DELETE FROM transactions WHERE id = ?').run(id);
   return NextResponse.json({ success: true });
 }

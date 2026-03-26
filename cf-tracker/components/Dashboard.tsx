@@ -173,12 +173,24 @@ export default function Dashboard({ onAnalyze }: { onAnalyze: (msg: string) => v
 
       {/* Analyze button */}
       {transactions.length > 0 && (
-        <button
-          onClick={handleAnalyze}
-          className="w-full rounded-2xl bg-gradient-to-r from-[#c084fc] to-[#e879f9] py-3.5 text-[13px] font-bold text-white shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
-        >
-          🤖 AIに振り返ってもらう →
-        </button>
+        <>
+          <button
+            onClick={handleAnalyze}
+            className="w-full rounded-2xl bg-gradient-to-r from-[#c084fc] to-[#e879f9] py-3.5 text-[13px] font-bold text-white shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
+          >
+            🤖 AIに振り返ってもらう →
+          </button>
+          <button
+            onClick={async () => {
+              if (!confirm('すべての記録を削除しますか？この操作は取り消せません。')) return;
+              await fetch('/api/transactions?all=true', { method: 'DELETE' });
+              loadData();
+            }}
+            className="w-full rounded-2xl border border-[#fecdd3] bg-white py-3 text-[13px] text-[#e11d48] transition-colors hover:bg-[#fff1f2]"
+          >
+            🗑️ 記録をすべてリセット
+          </button>
+        </>
       )}
     </div>
   );
