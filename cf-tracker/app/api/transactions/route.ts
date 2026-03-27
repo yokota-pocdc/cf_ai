@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { date, amount, description, category, subcategory, chat_context } = body;
+  const { date, amount, description, category, subcategory, chat_context, chat_summary } = body;
 
   if (!date || !amount || !description || !category) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
 
   const db = getDb();
   const result = db
-    .prepare('INSERT INTO transactions (date, amount, description, category, subcategory, chat_context) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(date, amount, description, category, subcategory || null, chat_context || null);
+    .prepare('INSERT INTO transactions (date, amount, description, category, subcategory, chat_context, chat_summary) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(date, amount, description, category, subcategory || null, chat_context || null, chat_summary || null);
 
   const row = db.prepare('SELECT * FROM transactions WHERE id = ?').get(result.lastInsertRowid) as Transaction;
   return NextResponse.json(row, { status: 201 });

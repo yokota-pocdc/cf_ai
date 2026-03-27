@@ -10,6 +10,7 @@ interface Transaction {
   category: string;
   subcategory: string | null;
   chat_context: string | null;
+  chat_summary: string | null;
 }
 
 const CATS: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
@@ -190,13 +191,13 @@ export default function ParentDashboard() {
           </div>
         </div>
 
-        {/* Transaction list with context */}
+        {/* Transaction list with summary */}
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="mb-3 text-sm font-bold text-[#4a3660]">📋 記録一覧（会話の文脈付き）</div>
+          <div className="mb-3 text-sm font-bold text-[#4a3660]">📋 記録一覧</div>
           {transactions.length === 0 ? (
             <div className="py-6 text-center text-sm text-[#a78bfa]">この月の記録はまだありません</div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               {transactions.map((tx) => {
                 const cat = CATS[tx.category] || { label: '?', emoji: '❓', color: '#888', bg: '#f5f3ff' };
                 return (
@@ -213,14 +214,9 @@ export default function ParentDashboard() {
                         ¥{tx.amount.toLocaleString()}
                       </span>
                     </div>
-                    {tx.chat_context && (
-                      <div className="mt-2 rounded-lg bg-[#faf5ff] p-2.5 text-xs leading-relaxed text-[#6b5c7e]">
-                        <div className="mb-1 text-[10px] font-bold text-[#a78bfa]">💬 この時の会話</div>
-                        {tx.chat_context.split('\n').map((line, i) => (
-                          <div key={i} className={line.startsWith('子ども:') ? 'font-medium text-[#4a3660]' : ''}>
-                            {line}
-                          </div>
-                        ))}
+                    {tx.chat_summary && (
+                      <div className="mt-1.5 rounded-lg bg-[#faf5ff] px-2.5 py-2 text-xs leading-relaxed text-[#6b5c7e]">
+                        💬 {tx.chat_summary}
                       </div>
                     )}
                   </div>

@@ -14,6 +14,7 @@ interface TransactionData {
   category: Category;
   subcategory: string;
   date: string;
+  summary?: string;
 }
 
 function getInitialMessages(name?: string): Message[] {
@@ -152,7 +153,7 @@ ${nameInstruction}
 2. 「これって自分的には投資？消費？浪費？どう思う？」と聞く
 3. ユーザーが分類を決めたら（または明らかな場合）、必ずこの形式で出力する：
 
-<tx>{"amount":金額数値,"description":"説明","category":"invest|consume|waste","subcategory":"サブカテゴリ","date":"${today}"}</tx>
+<tx>{"amount":金額数値,"description":"説明","category":"invest|consume|waste","subcategory":"サブカテゴリ","date":"${today}","summary":"この支出の背景・本人の気持ち・判断理由を1〜2文で要約"}</tx>
 
 サブカテゴリ候補：
 - invest: 学び・参考書, 習い事・体験, 健康・スポーツ, 道具・文具
@@ -201,7 +202,11 @@ ${txSummary || 'まだ記録なし'}
             await fetch('/api/transactions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...tx, chat_context: recentChat }),
+              body: JSON.stringify({
+                ...tx,
+                chat_context: recentChat,
+                chat_summary: tx.summary || null,
+              }),
             });
             const cat = CATS[tx.category];
             newMessages.push({

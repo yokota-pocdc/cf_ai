@@ -36,10 +36,13 @@ export function getDb(): Database.Database {
       );
     `);
 
-    // Migration: add chat_context column if missing
+    // Migration: add columns if missing
     const cols = db.prepare("PRAGMA table_info(transactions)").all() as { name: string }[];
     if (!cols.some((c) => c.name === 'chat_context')) {
       db.exec('ALTER TABLE transactions ADD COLUMN chat_context TEXT');
+    }
+    if (!cols.some((c) => c.name === 'chat_summary')) {
+      db.exec('ALTER TABLE transactions ADD COLUMN chat_summary TEXT');
     }
 
     // Set default allowance if not exists
@@ -59,5 +62,6 @@ export interface Transaction {
   category: string;
   subcategory: string | null;
   chat_context: string | null;
+  chat_summary: string | null;
   created_at: string;
 }
