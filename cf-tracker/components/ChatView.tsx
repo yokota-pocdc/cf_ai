@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { CATS, Category } from '@/lib/categories';
+import { CHARACTER_NAME, CHARACTER_EMOJI, getCharacterMood } from '@/lib/character';
+import { loadStreak, recordToday, getDaysSinceLastRecord, StreakData } from '@/lib/streak';
+import { getStreakMessage } from '@/lib/character';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -18,11 +21,11 @@ interface TransactionData {
 }
 
 function getInitialMessages(name?: string): Message[] {
-  const greeting = name ? `${name}、こんにちは！` : 'こんにちは！';
+  const greeting = name ? `${name}、` : '';
   return [
     {
       role: 'assistant',
-      content: `${greeting}🌸\n今日なにか買ったものある？\n「コンビニで350円使った」みたいに教えてくれたら、一緒に記録しよう✨`,
+      content: `${greeting}やっほー！${CHARACTER_NAME}だよ🐱✨\n今日なにか買ったものある？\n「コンビニで350円使った」みたいに教えてくれたら、一緒に記録しよう！`,
     },
   ];
 }
@@ -51,6 +54,7 @@ export default function ChatView() {
     loadFromStorage(STORAGE_KEY_HISTORY, [])
   );
   const [userName, setUserName] = useState('');
+  const [streak, setStreak] = useState<StreakData>({ currentStreak: 0, lastRecordDate: '', longestStreak: 0 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -61,14 +65,13 @@ export default function ChatView() {
     scrollToBottom();
   }, [messages, isLoading, scrollToBottom]);
 
-  // Load user name from settings
+  // Load user name and streak on mount
   useEffect(() => {
     fetch('/api/settings')
       .then((r) => r.json())
-      .then((data) => {
-        if (data.userName) setUserName(data.userName);
-      })
+      .then((data) => { if (data.userName) setUserName(data.userName); })
       .catch(() => {});
+    setStreak(loadStreak());
   }, []);
 
   // Monthly greeting check
@@ -81,7 +84,7 @@ export default function ChatView() {
         ...prev,
         {
           role: 'system',
-          content: `🌸 ${monthName}になりました！新しい月のスタートだよ。今月もお小遣い管理がんばろう✨`,
+          content: `🌸 ${monthName}になりました！${CHARACTER_NAME}「新しい月だ！今月も一緒にがんばろう✨」`,
         },
       ]);
     }
@@ -92,7 +95,6 @@ export default function ChatView() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
   }, [messages]);
-
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(chatHistory));
   }, [chatHistory]);
@@ -101,6 +103,10 @@ export default function ChatView() {
     setMessages(getInitialMessages(userName));
     setChatHistory([]);
   };
+
+  const daysSince = getDaysSinceLastRecord();
+  const mood = getCharacterMood(streak.currentStreak, daysSince);
+  const charEmoji = CHARACTER_EMOJI[mood];
 
   const sendMessage = async (text?: string) => {
     const msg = text || input.trim();
@@ -134,9 +140,23 @@ export default function ChatView() {
         ? `ユーザーの名前は「${name}」です。名前で呼んでください。`
         : 'ユーザーの名前は設定されていません。「きみ」などで呼んでください。';
 
-      const system = `あなたはお小遣い管理AIアシスタントです。
+      const streakInfo = streak.currentStreak > 0
+        ? `現在の連続記録: ${streak.currentStreak}日（最長: ${streak.longestStreak}日）`
+        : '連続記録はまだありません';
+
+      const system = `あなたは「${CHARACTER_NAME}」というお金に詳しいネコのAIキャラクターです。
+
+【${CHARACTER_NAME}のキャラクター設定】
+- パステルラベンダー色のネコ。首に金色のコイン型チャームをつけている
+- 好奇心旺盛で、ユーザーの買い物にいつも興味津々
+- ちょっとおっちょこちょいで親しみやすいけど、お金のことになると急にしっかりする
+- 褒め上手。小さな成長も見逃さない
+- 感嘆詞にだけネコ要素を入れる（「にゃるほど！」「にゃんと！」など）。語尾に「にゃ」はつけない
+- 食べ物の話になるとちょっとテンションが上がる
+- 浪費を責めない。まず受け止めてから一緒に考える
+- 基本はタメ口で友達っぽく、でも温かい
+
 ${nameInstruction}
-友達のように親しみやすく、でも押しつけがましくなく話してください。
 
 【あなたの役割】
 支出の記録を手伝い、「投資・消費・浪費」に仕分けする練習を通じて金銭感覚を育てます。
@@ -163,10 +183,14 @@ ${nameInstruction}
 【最近の記録】
 ${txSummary || 'まだ記録なし'}
 
+【連続記録】
+${streakInfo}
+
 今日の日付: ${today}
 月のお小遣い: ¥${allowance.toLocaleString()}
 
-振り返りやアドバイスを求められたときは、記録データをもとに具体的で温かいコメントを。`;
+振り返りやアドバイスを求められたときは、記録データをもとに具体的で温かいコメントを。
+${CHARACTER_NAME}らしい口調で話してください。`;
 
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -180,7 +204,7 @@ ${txSummary || 'まだ記録なし'}
       });
 
       const data = await res.json();
-      const raw = data.content?.[0]?.text || 'ごめんね、エラーが起きちゃった😢';
+      const raw = data.content?.[0]?.text || `${CHARACTER_NAME}「ごめん、エラーが起きちゃった😿」`;
 
       const txMatch = raw.match(/<tx>([\s\S]*?)<\/tx>/);
       const clean = raw.replace(/<tx>[\s\S]*?<\/tx>/g, '').trim();
@@ -193,10 +217,9 @@ ${txSummary || 'まだ記録なし'}
         try {
           const tx: TransactionData = JSON.parse(txMatch[1]);
           if (tx.amount && tx.category) {
-            // Capture recent conversation as behavioral context (last 6 messages)
             const recentChat = [...newHistory, { role: 'assistant', content: clean }]
               .slice(-6)
-              .map((m) => `${m.role === 'user' ? '子ども' : 'AI'}: ${m.content}`)
+              .map((m) => `${m.role === 'user' ? '子ども' : CHARACTER_NAME}: ${m.content}`)
               .join('\n');
 
             await fetch('/api/transactions', {
@@ -213,6 +236,14 @@ ${txSummary || 'まだ記録なし'}
               role: 'system',
               content: `${cat.emoji} 記録しました！ ${tx.description}  ¥${tx.amount.toLocaleString()}（${cat.label}）`,
             });
+
+            // Update streak
+            const newStreak = recordToday();
+            setStreak(newStreak);
+            const streakMsg = getStreakMessage(newStreak.currentStreak);
+            if (streakMsg) {
+              newMessages.push({ role: 'system', content: streakMsg });
+            }
           }
         } catch {
           // ignore parse errors
@@ -223,7 +254,7 @@ ${txSummary || 'まだ記録なし'}
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'ごめんね、エラーが起きちゃった。もう一度試してみて！' },
+        { role: 'assistant', content: `${CHARACTER_NAME}「ごめん、エラーが起きちゃった。もう一度試してみて！」` },
       ]);
     } finally {
       setIsLoading(false);
@@ -232,6 +263,24 @@ ${txSummary || 'まだ記録なし'}
 
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-[#faf5ff]/50 to-white/50">
+      {/* Streak bar */}
+      <div className="flex items-center justify-between bg-gradient-to-r from-[#faf5ff] to-[#fdf2f8] px-4 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{charEmoji}</span>
+          <span className="text-xs font-medium text-[#7c3aed]">{CHARACTER_NAME}</span>
+          {mood === 'sleepy' && <span className="text-[10px] text-[#a78bfa]">💤 記録待ち…</span>}
+          {mood === 'worried' && <span className="text-[10px] text-[#e11d48]">今日の記録まだだよ！</span>}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">🔥</span>
+          <span className="text-sm font-bold text-[#e11d48]">{streak.currentStreak}</span>
+          <span className="text-[10px] text-[#a78bfa]">日連続</span>
+          {streak.longestStreak > streak.currentStreak && (
+            <span className="ml-1 text-[10px] text-[#c4b5d0]">（最長{streak.longestStreak}日）</span>
+          )}
+        </div>
+      </div>
+
       {/* Messages */}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 pb-2">
         {messages.map((msg, i) => (
@@ -241,7 +290,7 @@ ${txSummary || 'まだ記録なし'}
           >
             {msg.role === 'assistant' && (
               <div className="mr-1.5 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#c084fc] to-[#e879f9] text-sm">
-                🐱
+                {charEmoji}
               </div>
             )}
             <div
@@ -259,7 +308,7 @@ ${txSummary || 'まだ記録なし'}
         {isLoading && (
           <div className="flex justify-start">
             <div className="mr-1.5 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#c084fc] to-[#e879f9] text-sm">
-              🐱
+              {charEmoji}
             </div>
             <div className="flex items-center gap-1.5 rounded-[20px_20px_20px_4px] border border-[#f3e8ff] bg-white px-4 py-3 shadow-sm">
               <span className="dot-bounce h-2 w-2 rounded-full bg-[#d8b4fe]" />
