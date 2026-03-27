@@ -32,7 +32,12 @@ const CATS: Record<string, { label: string; emoji: string; color: string; bg: st
   waste: { label: '浪費', emoji: '🎀', color: '#e11d48', bg: '#ffe4e6' },
 };
 
-type Tab = 'monthly' | 'trend';
+type Tab = 'monthly' | 'trend' | 'chat';
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 function renderMarkdown(md: string) {
   return md
@@ -49,6 +54,11 @@ export default function ParentDashboard() {
   const [passphrase, setPassphrase] = useState('');
   const [authError, setAuthError] = useState('');
   const [tab, setTab] = useState<Tab>('monthly');
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
 
   // Monthly state
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -97,6 +107,29 @@ export default function ParentDashboard() {
       loadTrend();
     }
   }, [authed, loadMonthly, loadTrend]);
+
+  const sendChat = async (text?: string) => {
+    const msg = text || chatInput.trim();
+    if (!msg || chatLoading) return;
+    setChatInput('');
+    const newMessages: ChatMessage[] = [...chatMessages, { role: 'user', content: msg }];
+    setChatMessages(newMessages);
+    setChatLoading(true);
+    try {
+      const res = await fetch('/api/parent/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages }),
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text || 'エラーが発生しました。';
+      setChatMessages([...newMessages, { role: 'assistant', content: reply }]);
+    } catch {
+      setChatMessages([...newMessages, { role: 'assistant', content: 'エラーが発生しました。' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/parent/report?month=' + new Date().toISOString().slice(0, 7))
@@ -161,6 +194,9 @@ export default function ParentDashboard() {
           </button>
           <button onClick={() => setTab('trend')} className={`flex-1 border-b-2 py-2 text-xs font-medium ${tab === 'trend' ? 'border-white text-white' : 'border-transparent text-white/50'}`}>
             📈 成長トレンド
+          </button>
+          <button onClick={() => setTab('chat')} className={`flex-1 border-b-2 py-2 text-xs font-medium ${tab === 'chat' ? 'border-white text-white' : 'border-transparent text-white/50'}`}>
+            💬 AI相談
           </button>
         </div>
       </div>
@@ -357,6 +393,73 @@ export default function ParentDashboard() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== Chat Tab ===== */}
+      {tab === 'chat' && (
+        <div className="flex flex-1 flex-col">
+          {/* Messages */}
+          <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4 pb-2">
+            {chatMessages.length === 0 && (
+              <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
+                <div className="text-3xl">🧑‍🏫</div>
+                <div className="mt-3 text-sm font-bold text-[#4a3660]">AI教育アドバイザー</div>
+                <p className="mt-2 text-xs leading-relaxed text-[#a78bfa]">
+                  {userName || 'お子さん'}のお小遣いデータをもとに、<br />
+                  声かけの仕方や教育方針をアドバイスします。
+                </p>
+              </div>
+            )}
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' && (
+                  <div className="mr-1.5 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6d28d9] to-[#9333ea] text-sm">🧑‍🏫</div>
+                )}
+                <div className={`max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'rounded-[20px_20px_4px_20px] bg-gradient-to-r from-[#6d28d9] to-[#9333ea] text-white'
+                    : 'rounded-[20px_20px_20px_4px] border border-[#f3e8ff] bg-white text-[#4a3660]'
+                }`} dangerouslySetInnerHTML={{ __html: msg.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') }} />
+              </div>
+            ))}
+            {chatLoading && (
+              <div className="flex justify-start">
+                <div className="mr-1.5 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6d28d9] to-[#9333ea] text-sm">🧑‍🏫</div>
+                <div className="flex items-center gap-1.5 rounded-[20px_20px_20px_4px] border border-[#f3e8ff] bg-white px-4 py-3">
+                  <span className="dot-bounce h-2 w-2 rounded-full bg-[#a78bfa]" />
+                  <span className="dot-bounce h-2 w-2 rounded-full bg-[#7c3aed]" />
+                  <span className="dot-bounce h-2 w-2 rounded-full bg-[#6d28d9]" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick prompts for parents */}
+          <div className="flex flex-wrap gap-1.5 px-4 pb-2">
+            {[
+              { label: '📊 うちの子の傾向は？', prompt: 'うちの子のお金の使い方の傾向を教えてください。良い点と気になる点を両方知りたいです。' },
+              { label: '💬 声かけの仕方', prompt: '浪費について子どもに伝えたいのですが、否定せずに話すにはどう声をかけたらいいですか？' },
+              { label: '💰 お小遣いの額', prompt: 'お小遣いの額は今のままで適切ですか？データを見てアドバイスをください。' },
+            ].map((q, i) => (
+              <button key={i} onClick={() => sendChat(q.prompt)}
+                className="whitespace-nowrap rounded-full border border-[#e9d5ff] bg-white px-3 py-1.5 text-[11px] text-[#7c3aed] shadow-sm hover:bg-[#faf5ff]">
+                {q.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Input */}
+          <div className="flex gap-2 border-t border-[#f3e8ff] bg-white/80 px-4 py-3 backdrop-blur-sm">
+            <input value={chatInput} onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && sendChat()}
+              placeholder="お子さんのお金の使い方について相談..."
+              className="flex-1 rounded-full border border-[#e9d5ff] bg-[#faf5ff] px-4 py-2.5 text-base text-[#4a3660] outline-none placeholder:text-[#c4b5d0] focus:border-[#7c3aed] focus:bg-white focus:ring-2 focus:ring-[#7c3aed]/20" />
+            <button onClick={() => sendChat()} disabled={chatLoading}
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#6d28d9] to-[#9333ea] text-lg text-white shadow-md disabled:opacity-40">
+              ▲
+            </button>
           </div>
         </div>
       )}
