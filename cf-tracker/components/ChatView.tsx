@@ -192,10 +192,16 @@ ${txSummary || 'まだ記録なし'}
         try {
           const tx: TransactionData = JSON.parse(txMatch[1]);
           if (tx.amount && tx.category) {
+            // Capture recent conversation as behavioral context (last 6 messages)
+            const recentChat = [...newHistory, { role: 'assistant', content: clean }]
+              .slice(-6)
+              .map((m) => `${m.role === 'user' ? '子ども' : 'AI'}: ${m.content}`)
+              .join('\n');
+
             await fetch('/api/transactions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(tx),
+              body: JSON.stringify({ ...tx, chat_context: recentChat }),
             });
             const cat = CATS[tx.category];
             newMessages.push({

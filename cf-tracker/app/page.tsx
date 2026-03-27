@@ -29,12 +29,22 @@ export default function Home() {
     <div className="mx-auto flex min-h-screen max-w-[480px] flex-col overflow-hidden rounded-none bg-white/80 shadow-[0_0_60px_rgba(168,85,247,0.08)] backdrop-blur-sm sm:my-4 sm:rounded-3xl sm:min-h-[calc(100vh-2rem)]">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#c084fc] via-[#e879f9] to-[#f9a8d4] px-5 pb-3 pt-5">
-        <h1 className="text-lg font-bold tracking-wide text-white drop-shadow-sm">
-          ✨ おこづかいノート
-        </h1>
-        <p className="mt-0.5 text-[11px] text-white/80">
-          投資・消費・浪費を仕分けて、お金の流れを見える化しよう！
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-lg font-bold tracking-wide text-white drop-shadow-sm">
+              ✨ おこづかいノート
+            </h1>
+            <p className="mt-0.5 text-[11px] text-white/80">
+              投資・消費・浪費を仕分けて、お金の流れを見える化しよう！
+            </p>
+          </div>
+          <a
+            href="/parent"
+            className="rounded-lg bg-white/20 px-2 py-1 text-[10px] text-white/80 transition-colors hover:bg-white/30"
+          >
+            👨‍👩‍👧 保護者
+          </a>
+        </div>
       </div>
 
       {/* Tabs */}

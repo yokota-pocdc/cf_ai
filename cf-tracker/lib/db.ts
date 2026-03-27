@@ -26,6 +26,7 @@ export function getDb(): Database.Database {
         description TEXT NOT NULL,
         category    TEXT NOT NULL,
         subcategory TEXT,
+        chat_context TEXT,
         created_at  TEXT DEFAULT (datetime('now'))
       );
 
@@ -34,6 +35,12 @@ export function getDb(): Database.Database {
         value TEXT
       );
     `);
+
+    // Migration: add chat_context column if missing
+    const cols = db.prepare("PRAGMA table_info(transactions)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === 'chat_context')) {
+      db.exec('ALTER TABLE transactions ADD COLUMN chat_context TEXT');
+    }
 
     // Set default allowance if not exists
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('allowance');
@@ -51,5 +58,6 @@ export interface Transaction {
   description: string;
   category: string;
   subcategory: string | null;
+  chat_context: string | null;
   created_at: string;
 }
